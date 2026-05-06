@@ -1,73 +1,140 @@
 <template>
   <div class="page result-page">
-    <el-alert v-if="error" :title="error" type="error" show-icon style="margin-bottom:12px" />
-    <el-skeleton v-if="loading" :rows="6" animated />
+    <el-alert v-if="error" :title="error" type="error" show-icon style="margin-bottom: 12px" />
+    <el-skeleton v-if="loading" :rows="8" animated />
+
     <section v-if="result" class="result-layout">
       <div class="panel result-main">
         <div class="section-title">
           <div>
-            <h2>{{ result.hit ? '已为你匹配到最相关答案' : '知识库暂未命中' }}</h2>
+            <h2>{{ titleText }}</h2>
             <p>{{ askedQuestion }}</p>
           </div>
         </div>
 
-        <template v-if="result.hit">
-          <div class="result-hit-top">
+        <div v-if="result.hit && result.candidates?.length" class="result-hit-top">
+          <div>
+            <span>匹配问题</span>
+            <strong>{{ result.candidates[0]?.matchedQuestion }}</strong>
+          </div>
+          <div>
+            <span>相似度</span>
+            <strong>{{ Number(result.similarity || 0).toFixed(4) }}</strong>
+          </div>
+        </div>
+
+        <article class="answer-card">
+          <h3>{{ result.answerSource === 'graph' ? '图谱回答摘要' : '标准答案' }}</h3>
+          <p v-if="result.faq?.standardAnswer">{{ result.faq.standardAnswer }}</p>
+          <p v-else-if="result.message">{{ result.message }}</p>
+          <p v-else>暂无可展示答案</p>
+        </article>
+
+        <article v-if="result.aiAnswer" class="answer-card ai">
+          <h3>AI 参考答复</h3>
+          <p>{{ result.aiAnswer }}</p>
+        </article>
+
+        <article v-if="result.graph?.nodes?.length" class="answer-card graph-card">
+          <div class="card-head">
             <div>
-              <span>匹配问题</span>
-              <strong>{{ result.candidates?.[0]?.matchedQuestion }}</strong>
+              <h3>相关事项关系图</h3>
+              <p>{{ result.graph.summary || '围绕当前事项展示一跳知识图谱关系。' }}</p>
             </div>
-            <div>
-              <span>相似度</span>
-              <strong>{{ Number(result.similarity || 0).toFixed(4) }}</strong>
+            <el-button size="small" @click="reloadGraph">刷新图谱</el-button>
+          </div>
+          <KnowledgeGraphChart :graph="result.graph" @node-click="handleNodeClick" />
+        </article>
+
+        <article v-if="result.graphPath?.length" class="answer-card path-card">
+          <h3>办理路径</h3>
+          <div class="path-flow">
+            <div v-for="step in result.graphPath" :key="`${step.step}-${step.id}`" class="path-step">
+              <span>{{ step.type }}</span>
+              <strong>{{ step.name }}</strong>
             </div>
           </div>
-          <article class="answer-card">
-            <h3>标准答案</h3>
-            <p>{{ result.faq?.standardAnswer }}</p>
-          </article>
-        </template>
-
-        <template v-else>
-          <article class="answer-card warn">
-            <h3>处理结果</h3>
-            <p>{{ result.message }}</p>
-          </article>
-          <article v-if="result.aiAnswer" class="answer-card ai">
-            <h3>第三方 AI 参考答复</h3>
-            <p>{{ result.aiAnswer }}</p>
-          </article>
-        </template>
+        </article>
       </div>
 
       <aside class="panel result-side">
         <div class="section-title">
           <div>
-            <h3>下一步建议</h3>
-            <p>继续提问，或从分类页进入更稳定的知识卡片</p>
+            <h3>图谱详情</h3>
+            <p>查看节点说明、关联问答和下一步建议</p>
           </div>
         </div>
-        <button class="result-action primary" @click="$router.push('/')">返回首页继续提问</button>
-        <button class="result-action" @click="$router.push('/category/1')">查看分类服务</button>
-        <div class="side-tip">
-          <strong>温馨提示</strong>
-          <p>如涉及本地政策、材料清单和办理时效，建议以当地政务服务大厅、12345 或官方公告为准。</p>
+
+        <div class="side-card">
+          <strong>{{ activeNode?.name || result.graph?.centerNode?.name || '当前事项' }}</strong>
+          <p>{{ activeNode?.summary || result.graph?.centerNode?.summary || '点击图谱中的节点可查看说明。' }}</p>
         </div>
+
+        <div v-if="activeNodeProperties.length" class="side-card">
+          <strong>节点属性</strong>
+          <ul class="prop-list">
+            <li v-for="item in activeNodeProperties" :key="item.key">
+              <span>{{ item.key }}</span>
+              <em>{{ item.value }}</em>
+            </li>
+          </ul>
+        </div>
+
+        <div v-if="result.relatedFaqs?.length" class="side-card">
+          <strong>关联问答</strong>
+          <button
+            v-for="item in result.relatedFaqs"
+            :key="item.id"
+            class="related-faq"
+            @click="goAsk(item.question)"
+          >
+            {{ item.question }}
+          </button>
+        </div>
+
+        <button class="result-action primary" @click="$router.push('/')">返回首页继续提问</button>
       </aside>
     </section>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import http from '../../api/http'
+import KnowledgeGraphChart from '../../components/KnowledgeGraphChart.vue'
 
+const router = useRouter()
 const result = ref(null)
 const loading = ref(true)
 const error = ref('')
 const askedQuestion = ref('')
+const activeNode = ref(null)
 
-onMounted(async () => {
+const titleText = computed(() => {
+  if (!result.value) {
+    return ''
+  }
+  if (result.value.hit) {
+    return '已为你匹配到最相关答案'
+  }
+  if (result.value.answerSource === 'graph') {
+    return '知识图谱为你补充了相关事项信息'
+  }
+  return '知识库暂未命中'
+})
+
+const activeNodeProperties = computed(() => {
+  const props = activeNode.value?.properties || {}
+  return Object.entries(props)
+    .filter(([key, value]) => !['bizId', 'name', 'type', 'summary', 'status', 'source', 'aliases', 'createdAt', 'updatedAt'].includes(key) && value !== null && value !== '')
+    .map(([key, value]) => ({
+      key,
+      value: Array.isArray(value) ? value.join('、') : String(value)
+    }))
+})
+
+const fetchAskResult = async () => {
   const q = localStorage.getItem('last_question') || ''
   askedQuestion.value = q
   if (!q.trim()) {
@@ -76,20 +143,54 @@ onMounted(async () => {
     return
   }
   try {
-    const resp = await http.post('/api/public/ask', { question: q, topN: 3 })
+    const resp = await http.post('/public/ask', { question: q, topN: 3 })
     result.value = resp.data.data
-  } catch (e) {
-    if (e.code === 'ECONNABORTED') {
-      error.value = '请求超时：知识库未命中时第三方 AI 响应较慢，请稍后重试或暂时关闭 AI。'
-    } else if (e.response?.data?.message) {
-      error.value = `请求失败：${e.response.data.message}`
-    } else {
-      error.value = '请求结果失败，请检查后端服务和第三方 AI 配置是否正常。'
+    activeNode.value = result.value?.graph?.centerNode || null
+    if (activeNode.value?.id) {
+      await loadNodeDetail(activeNode.value.id)
     }
+  } catch (e) {
+    error.value = e.response?.data?.message || '请求结果失败，请检查后端服务是否正常。'
   } finally {
     loading.value = false
   }
-})
+}
+
+const loadNodeDetail = async (nodeId) => {
+  try {
+    const resp = await http.get(`/public/graph/node/${nodeId}`)
+    if (resp.data.data) {
+      activeNode.value = resp.data.data
+    }
+  } catch (_e) {
+    // Keep the basic graph node payload if detail loading fails.
+  }
+}
+
+const handleNodeClick = async (node) => {
+  activeNode.value = node
+  if (node?.id) {
+    await loadNodeDetail(node.id)
+  }
+}
+
+const reloadGraph = async () => {
+  const matterId = result.value?.graph?.centerNode?.id
+  if (!matterId) {
+    return
+  }
+  const resp = await http.get(`/public/graph/matter/${matterId}`)
+  if (resp.data.data) {
+    result.value.graph = resp.data.data
+  }
+}
+
+const goAsk = (question) => {
+  localStorage.setItem('last_question', question)
+  router.go(0)
+}
+
+onMounted(fetchAskResult)
 </script>
 
 <style scoped>
@@ -99,11 +200,16 @@ onMounted(async () => {
   gap: 18px;
 }
 
+.result-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 .result-hit-top {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-  margin-bottom: 16px;
 }
 
 .result-hit-top div {
@@ -130,12 +236,8 @@ onMounted(async () => {
   border: 1px solid var(--border);
 }
 
-.answer-card + .answer-card {
-  margin-top: 14px;
-}
-
 .answer-card h3 {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
 }
 
 .answer-card p {
@@ -144,18 +246,99 @@ onMounted(async () => {
   white-space: pre-wrap;
 }
 
-.answer-card.warn {
-  background: linear-gradient(180deg, #fffef8, #fff7ed);
-}
-
 .answer-card.ai {
   background: linear-gradient(180deg, #f8fdff, #eff8ff);
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.card-head p {
+  color: var(--muted);
+}
+
+.path-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.path-step {
+  min-width: 120px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f8fafc, #eef8f6);
+}
+
+.path-step span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.path-step strong {
+  display: block;
+  margin-top: 6px;
 }
 
 .result-side {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.side-card {
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border);
+}
+
+.side-card p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.prop-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.prop-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.prop-list span {
+  color: var(--muted);
+}
+
+.prop-list em {
+  color: #0f172a;
+  font-style: normal;
+  text-align: right;
+}
+
+.related-faq {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
 }
 
 .result-action {
@@ -174,22 +357,14 @@ onMounted(async () => {
   color: #fff;
 }
 
-.side-tip {
-  padding: 18px;
-  border-radius: 20px;
-  background: rgba(15, 118, 110, 0.08);
-}
-
-.side-tip p {
-  margin: 8px 0 0;
-  color: var(--muted);
-  line-height: 1.7;
-}
-
 @media (max-width: 768px) {
   .result-layout,
   .result-hit-top {
     grid-template-columns: 1fr;
+  }
+
+  .card-head {
+    flex-direction: column;
   }
 }
 </style>

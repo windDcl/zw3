@@ -9,7 +9,7 @@ export default defineConfig({
       '/api': {
         target: 'http://127.0.0.1:8080',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        // Keep `/api` prefix so backend controllers like `/api/public/...` match.
       }
     }
   }

@@ -12,6 +12,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class SettingService {
+    // 系统配置业务层：读取与更新运行参数
     private final SystemSettingRepository systemSettingRepository;
 
     private static final Map<String, String> DEFAULTS = new LinkedHashMap<>();

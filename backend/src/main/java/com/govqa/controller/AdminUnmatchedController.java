@@ -14,6 +14,7 @@ import java.util.Map;
 @RequestMapping("/api/admin/unmatched")
 @RequiredArgsConstructor
 public class AdminUnmatchedController {
+    // 管理端未命中问题接口：查看、处理与状态更新
     private final UnmatchedQuestionService unmatchedQuestionService;
 
     @GetMapping

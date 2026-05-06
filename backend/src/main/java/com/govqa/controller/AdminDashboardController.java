@@ -17,6 +17,7 @@ import java.util.Map;
 @RequestMapping("/api/admin/dashboard")
 @RequiredArgsConstructor
 public class AdminDashboardController {
+    // 管理端总览接口：汇总关键运营统计指标
     private final FaqRepository faqRepository;
     private final CategoryRepository categoryRepository;
     private final QaLogRepository qaLogRepository;

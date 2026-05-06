@@ -13,6 +13,7 @@ import java.util.Map;
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 public class AdminAuthController {
+    // 管理端认证入口：登录与会话校验
     private final AuthService authService;
 
     @PostMapping("/login")

@@ -9,6 +9,7 @@ import java.util.Arrays;
 
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
+    // 跨域配置：允许前端在开发/部署环境访问后端接口
     @Value("${APP_CORS_ALLOWED_ORIGINS:http://127.0.0.1:5173,http://localhost:5173}")
     private String allowedOrigins;
 

@@ -19,6 +19,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class FaqService {
+    // FAQ 业务层：问答维护、建议词与分类查询
     private final FaqRepository faqRepository;
     private final FaqAliasRepository faqAliasRepository;
     private final NlpClient nlpClient;

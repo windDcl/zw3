@@ -14,6 +14,7 @@ import java.util.List;
 @RequestMapping("/api/admin/announcements")
 @RequiredArgsConstructor
 public class AdminAnnouncementController {
+    // 管理端公告接口：发布与更新公告内容
     private final AnnouncementService announcementService;
 
     @GetMapping

@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+    // 认证业务层：管理员登录与 token 校验
     private final AdminRepository adminRepository;
     private final Map<String, LocalDateTime> tokenStore = new ConcurrentHashMap<>();
 

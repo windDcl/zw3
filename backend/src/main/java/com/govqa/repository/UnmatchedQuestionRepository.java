@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface UnmatchedQuestionRepository extends JpaRepository<UnmatchedQuestion, Long> {
+    // 未命中问题数据访问：用于待处理列表与状态流转
     @Query(value = "SELECT u.id, u.user_question AS userQuestion, u.similarity, u.status, " +
             "u.ai_suggested_question AS aiSuggestedQuestion, u.ai_suggested_answer AS aiSuggestedAnswer, " +
             "u.ai_suggested_aliases AS aiSuggestedAliases, u.ai_suggested_category AS aiSuggestedCategory, " +

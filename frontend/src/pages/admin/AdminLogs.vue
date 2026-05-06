@@ -46,6 +46,7 @@ const keyword = ref('')
 const hitFilter = ref(null)
 
 const filteredRows = computed(() =>
+  // 先按时间倒序，再按关键字/命中状态过滤
   [...rows.value]
     .sort((a, b) => `${b.createdAt || ''}`.localeCompare(`${a.createdAt || ''}`))
     .filter((row) => {
@@ -57,7 +58,8 @@ const filteredRows = computed(() =>
 )
 
 const loadData = async () => {
-  const resp = await http.get('/api/admin/qa-logs')
+  // 查询问答日志，供运营分析命中率
+  const resp = await http.get('/admin/qa-logs')
   rows.value = resp.data.data || []
 }
 

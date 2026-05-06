@@ -68,6 +68,7 @@ const form = reactive({
 })
 
 const aiEnabled = computed({
+  // UI 开关与后端字符串配置互转（true/false）
   get: () => form['ai.enabled'] === 'true',
   set: (value) => {
     form['ai.enabled'] = value ? 'true' : 'false'
@@ -75,12 +76,14 @@ const aiEnabled = computed({
 })
 
 const loadSettings = async () => {
-  const resp = await http.get('/api/admin/settings')
+  // 读取后端系统配置并回填表单
+  const resp = await http.get('/admin/settings')
   Object.assign(form, resp.data.data || {})
 }
 
 const saveSettings = async () => {
-  await http.put('/api/admin/settings', {
+  // 统一提交 settings 对象，后端按 key-value 保存
+  await http.put('/admin/settings', {
     settings: form
   })
   ElMessage.success('系统设置已保存')

@@ -24,7 +24,8 @@ const password = ref('Admin@123')
 const router = useRouter()
 
 const login = async () => {
-  const resp = await http.post('/api/admin/login', { username: username.value, password: password.value })
+  // 登录成功后把 token 持久化到本地，供路由守卫与请求拦截器使用
+  const resp = await http.post('/admin/login', { username: username.value, password: password.value })
   localStorage.setItem('admin_token', resp.data.data.token)
   router.push('/admin/dashboard')
 }

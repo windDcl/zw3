@@ -82,6 +82,7 @@ const form = reactive({
   standardAnswer: ''
 })
 
+// 未命中问题流转状态映射，驱动表格标签显示
 const statusMap = {
   0: { label: '待处理', type: 'warning' },
   1: { label: 'AI已建议', type: 'primary' },
@@ -97,9 +98,10 @@ const resetForm = () => {
 }
 
 const loadData = async () => {
+  // 并行加载未命中问题和分类列表，便于一键转 FAQ
   const [unmatchedResp, categoryResp] = await Promise.all([
-    http.get('/api/admin/unmatched'),
-    http.get('/api/admin/categories')
+    http.get('/admin/unmatched'),
+    http.get('/admin/categories')
   ])
   rows.value = unmatchedResp.data.data || []
   categories.value = categoryResp.data.data || []
@@ -126,7 +128,8 @@ const openResolve = (row) => {
 }
 
 const generateAi = async (row) => {
-  const resp = await http.post(`/api/admin/unmatched/${row.id}/ai-suggestion`)
+  // 向后端请求 AI 建议（标准问答/别名/推荐分类）
+  const resp = await http.post(`/admin/unmatched/${row.id}/ai-suggestion`)
   const data = resp.data.data || {}
   row.aiSuggestedQuestion = data.standardQuestion || ''
   row.aiSuggestedAnswer = data.standardAnswer || ''
@@ -141,7 +144,7 @@ const submitResolve = async () => {
   if (!currentRow.value) {
     return
   }
-  await http.post(`/api/admin/unmatched/${currentRow.value.id}/resolve-to-faq`, {
+  await http.post(`/admin/unmatched/${currentRow.value.id}/resolve-to-faq`, {
     categoryId: form.categoryId,
     standardQuestion: form.standardQuestion,
     standardAnswer: form.standardAnswer,
@@ -158,7 +161,7 @@ const submitResolve = async () => {
 }
 
 const ignoreRow = async (row) => {
-  await http.post(`/api/admin/unmatched/${row.id}/ignore`)
+  await http.post(`/admin/unmatched/${row.id}/ignore`)
   ElMessage.success('该问题已标记为忽略')
   await loadData()
 }

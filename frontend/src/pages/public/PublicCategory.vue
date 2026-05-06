@@ -34,20 +34,35 @@ const route = useRoute()
 const router = useRouter()
 const keyword = ref('')
 const faqs = ref([])
+// 与首页一致：统一规则识别要隐藏的测试分类
+const isHiddenCategory = (name) =>
+  String(name || '').trim().normalize('NFKC').toLowerCase() === '测试分类a'
 
 const loadFaqs = async () => {
-  const resp = await http.get(`/api/public/categories/${route.params.id}/faqs`, {
+  // 按当前分类 ID 拉取问答，可带关键字筛选
+  const resp = await http.get(`/public/categories/${route.params.id}/faqs`, {
     params: { keyword: keyword.value }
   })
   faqs.value = resp.data.data || []
 }
 
 const viewAnswer = (question) => {
+  // 复用结果页能力，写入问题后直接跳转
   localStorage.setItem('last_question', question)
   router.push('/result')
 }
 
-onMounted(loadFaqs)
+onMounted(async () => {
+  // 先校验当前分类是否需要隐藏，命中则直接返回首页
+  const categoryResp = await http.get('/public/categories')
+  const categories = categoryResp.data.data || []
+  const current = categories.find((item) => String(item.id) === String(route.params.id))
+  if (current && isHiddenCategory(current.name)) {
+    router.replace('/')
+    return
+  }
+  await loadFaqs()
+})
 </script>
 
 <style scoped>

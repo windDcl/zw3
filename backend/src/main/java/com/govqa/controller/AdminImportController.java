@@ -25,6 +25,7 @@ import java.util.Map;
 @RequestMapping("/api/admin/import")
 @RequiredArgsConstructor
 public class AdminImportController {
+    // 管理端导入接口：处理 Excel 批量导入数据
     private final FaqService faqService;
     private final DataFormatter formatter = new DataFormatter();
 

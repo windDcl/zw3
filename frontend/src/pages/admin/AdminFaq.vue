@@ -4,7 +4,7 @@
       <div class="section-title">
         <div>
           <h2>FAQ 管理</h2>
-          <p>维护标准问答和别名问题，并支持一键重建语义索引</p>
+          <p>维护标准问答、别名问题，并给 FAQ 绑定知识图谱事项节点。</p>
         </div>
         <el-space wrap>
           <el-button @click="loadData">刷新</el-button>
@@ -39,10 +39,11 @@
           </template>
         </el-table-column>
         <el-table-column prop="updatedAt" label="更新时间" width="180" />
-        <el-table-column label="操作" width="290" fixed="right">
+        <el-table-column label="操作" width="360" fixed="right">
           <template #default="{ row }">
             <el-space wrap>
               <el-button type="primary" plain @click="openEdit(row)">编辑</el-button>
+              <el-button plain @click="openGraphDialog(row)">图谱绑定</el-button>
               <el-button plain @click="toggleStatus(row)">
                 {{ row.status === 1 ? '停用' : '启用' }}
               </el-button>
@@ -57,7 +58,7 @@
       <el-form label-position="top">
         <div class="grid-two">
           <el-form-item label="所属分类">
-            <el-select v-model="form.categoryId" style="width:100%">
+            <el-select v-model="form.categoryId" style="width: 100%">
               <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
             </el-select>
           </el-form-item>
@@ -90,6 +91,55 @@
         <el-button type="primary" @click="submitForm">保存</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="graphDialogVisible" title="FAQ 图谱绑定" width="760px">
+      <div v-if="graphFaq" class="graph-dialog">
+        <div class="graph-summary">
+          <strong>{{ graphFaq.standardQuestion }}</strong>
+          <p>将该 FAQ 绑定到图谱事项节点，问答命中后就能展示知识图谱。</p>
+        </div>
+
+        <div class="graph-search">
+          <el-input
+            v-model="graphKeyword"
+            placeholder="搜索事项节点，例如：公积金提取"
+            clearable
+            @keyup.enter="searchGraphNodes"
+          />
+          <el-button type="primary" @click="searchGraphNodes">搜索节点</el-button>
+        </div>
+
+        <div class="graph-columns">
+          <div class="graph-col">
+            <h4>当前绑定</h4>
+            <div v-if="graphLinks.length" class="bind-list">
+              <div v-for="item in graphLinks" :key="item.id" class="bind-item">
+                <div>
+                  <strong>{{ item.graphNodeId }}</strong>
+                  <p>{{ item.graphNodeType }} · {{ item.isPrimary === 1 ? '主绑定' : '辅助绑定' }}</p>
+                </div>
+                <el-button type="danger" plain size="small" @click="removeGraphLink(item)">移除</el-button>
+              </div>
+            </div>
+            <div v-else class="empty-tip">暂未绑定图谱节点</div>
+          </div>
+
+          <div class="graph-col">
+            <h4>搜索结果</h4>
+            <div v-if="graphSearchRows.length" class="bind-list">
+              <div v-for="item in graphSearchRows" :key="item.id" class="bind-item">
+                <div>
+                  <strong>{{ item.name }}</strong>
+                  <p>{{ item.type }} · {{ item.summary || '暂无摘要' }}</p>
+                </div>
+                <el-button type="primary" size="small" @click="bindGraphNode(item)">设为主节点</el-button>
+              </div>
+            </div>
+            <div v-else class="empty-tip">请输入关键词搜索图谱节点</div>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -106,6 +156,11 @@ const statusFilter = ref(null)
 const dialogVisible = ref(false)
 const editingId = ref(null)
 const aliasesText = ref('')
+const graphDialogVisible = ref(false)
+const graphFaq = ref(null)
+const graphKeyword = ref('')
+const graphLinks = ref([])
+const graphSearchRows = ref([])
 const form = reactive({
   categoryId: null,
   standardQuestion: '',
@@ -113,9 +168,7 @@ const form = reactive({
   status: 1
 })
 
-const categoryMap = computed(() =>
-  Object.fromEntries(categories.value.map((item) => [item.id, item.name]))
-)
+const categoryMap = computed(() => Object.fromEntries(categories.value.map((item) => [item.id, item.name])))
 
 const filteredRows = computed(() =>
   rows.value.filter((row) => {
@@ -145,8 +198,8 @@ const resetForm = () => {
 
 const loadData = async () => {
   const [faqResp, categoryResp] = await Promise.all([
-    http.get('/api/admin/faqs'),
-    http.get('/api/admin/categories')
+    http.get('/admin/faqs'),
+    http.get('/admin/categories')
   ])
   rows.value = faqResp.data.data || []
   categories.value = categoryResp.data.data || []
@@ -158,7 +211,7 @@ const openCreate = () => {
 }
 
 const openEdit = async (row) => {
-  const resp = await http.get(`/api/admin/faqs/${row.id}`)
+  const resp = await http.get(`/admin/faqs/${row.id}`)
   const data = resp.data.data || {}
   const faq = data.faq || row
   editingId.value = row.id
@@ -182,10 +235,10 @@ const submitForm = async () => {
       .filter(Boolean)
   }
   if (editingId.value) {
-    await http.put(`/api/admin/faqs/${editingId.value}`, payload)
+    await http.put(`/admin/faqs/${editingId.value}`, payload)
     ElMessage.success('FAQ 已更新')
   } else {
-    await http.post('/api/admin/faqs', payload)
+    await http.post('/admin/faqs', payload)
     ElMessage.success('FAQ 已创建')
   }
   dialogVisible.value = false
@@ -194,7 +247,7 @@ const submitForm = async () => {
 }
 
 const toggleStatus = async (row) => {
-  await http.post(`/api/admin/faqs/${row.id}/status`, null, {
+  await http.post(`/admin/faqs/${row.id}/status`, null, {
     params: { status: row.status === 1 ? 0 : 1 }
   })
   ElMessage.success(`FAQ 已${row.status === 1 ? '停用' : '启用'}`)
@@ -205,14 +258,65 @@ const removeRow = async (row) => {
   await ElMessageBox.confirm(`确定删除 FAQ “${row.standardQuestion}”吗？`, '删除确认', {
     type: 'warning'
   })
-  await http.delete(`/api/admin/faqs/${row.id}`)
+  await http.delete(`/admin/faqs/${row.id}`)
   ElMessage.success('FAQ 已删除')
   await loadData()
 }
 
 const reindexFaqs = async () => {
-  await http.post('/api/admin/faqs/reindex')
+  await http.post('/admin/faqs/reindex')
   ElMessage.success('语义索引已重建')
+}
+
+const loadGraphLinks = async (faqId) => {
+  const resp = await http.get(`/admin/graph/faq-links/${faqId}`)
+  graphLinks.value = resp.data.data || []
+}
+
+const openGraphDialog = async (row) => {
+  graphFaq.value = row
+  graphKeyword.value = row.standardQuestion || ''
+  graphSearchRows.value = []
+  graphDialogVisible.value = true
+  await loadGraphLinks(row.id)
+}
+
+const searchGraphNodes = async () => {
+  if (!graphKeyword.value.trim()) {
+    graphSearchRows.value = []
+    return
+  }
+  const resp = await http.get('/admin/graph/nodes/search', {
+    params: {
+      keyword: graphKeyword.value,
+      limit: 10,
+      type: 'Matter'
+    }
+  })
+  graphSearchRows.value = resp.data.data || []
+}
+
+const bindGraphNode = async (node) => {
+  if (!graphFaq.value) {
+    return
+  }
+  await http.post('/admin/graph/faq-links', {
+    faqId: graphFaq.value.id,
+    graphNodeId: node.id,
+    graphNodeType: node.type,
+    isPrimary: 1,
+    sortOrder: 0
+  })
+  ElMessage.success('图谱节点已绑定')
+  await loadGraphLinks(graphFaq.value.id)
+}
+
+const removeGraphLink = async (item) => {
+  await http.delete(`/admin/graph/faq-links/${item.id}`)
+  ElMessage.success('绑定已移除')
+  if (graphFaq.value) {
+    await loadGraphLinks(graphFaq.value.id)
+  }
 }
 
 onMounted(loadData)
@@ -232,8 +336,67 @@ onMounted(loadData)
   margin-bottom: 16px;
 }
 
+.graph-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.graph-summary p {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.graph-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  gap: 12px;
+}
+
+.graph-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.graph-col {
+  min-height: 280px;
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid var(--border);
+}
+
+.graph-col h4 {
+  margin: 0 0 12px;
+}
+
+.bind-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bind-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid var(--border);
+}
+
+.bind-item p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 @media (max-width: 768px) {
-  .toolbar {
+  .toolbar,
+  .graph-search,
+  .graph-columns {
     grid-template-columns: 1fr;
   }
 }

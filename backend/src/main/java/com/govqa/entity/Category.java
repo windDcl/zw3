@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "category")
 public class Category {
+    // 分类主数据：名称、排序和启停状态
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

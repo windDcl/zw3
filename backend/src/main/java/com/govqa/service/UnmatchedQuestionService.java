@@ -17,6 +17,7 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class UnmatchedQuestionService {
+    // 未命中问题业务层：列表查询与处理闭环
     private final UnmatchedQuestionRepository unmatchedQuestionRepository;
     private final CategoryRepository categoryRepository;
     private final FaqService faqService;

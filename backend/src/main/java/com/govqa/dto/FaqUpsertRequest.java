@@ -9,6 +9,7 @@ import java.util.List;
 
 @Data
 public class FaqUpsertRequest {
+    // FAQ 新增/编辑请求体
     @NotNull
     private Long categoryId;
     @NotBlank

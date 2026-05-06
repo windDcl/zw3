@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "faq")
 public class Faq {
+    // FAQ 主表：标准问答与所属分类
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -13,10 +13,12 @@ import org.springframework.web.client.RestTemplate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
 public class NlpClient {
+    // NLP 客户端：调用语义匹配服务返回候选问题
     private final RestTemplate restTemplate;
 
     @Value("${app.nlp.base-url}")
@@ -37,11 +39,22 @@ public class NlpClient {
                 nlpBaseUrl + "/match",
                 HttpMethod.POST,
                 new HttpEntity<>(req),
-                new ParameterizedTypeReference<>() {
+                new ParameterizedTypeReference<Map<String, Object>>() {
                 }
         );
-        Object results = resp.getBody().get("results");
-        return ((List<Map<String, Object>>) results).stream().map(m -> {
+        Map<String, Object> body = resp.getBody();
+        if (body == null) {
+            return List.of();
+        }
+        Object resultsObj = body.get("results");
+        if (!(resultsObj instanceof List<?> results)) {
+            return List.of();
+        }
+        return results.stream()
+                .filter(Objects::nonNull)
+                .filter(item -> item instanceof Map)
+                .map(item -> (Map<String, Object>) item)
+                .map(m -> {
             MatchItem item = new MatchItem();
             item.setFaqId(((Number) m.get("faq_id")).longValue());
             item.setMatchedQuestion((String) m.get("matched_question"));

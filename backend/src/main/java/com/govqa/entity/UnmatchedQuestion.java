@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "unmatched_question")
 public class UnmatchedQuestion {
+    // 未命中问题池：用于后续人工补录与处理
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

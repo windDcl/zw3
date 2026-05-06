@@ -8,6 +8,7 @@ import java.util.Map;
 
 @RestController
 public class HealthController {
+    // 健康检查接口：用于服务存活探测
     @GetMapping("/health")
     public ApiResponse<Map<String, String>> health() {
         return ApiResponse.ok(Map.of("status", "ok"));

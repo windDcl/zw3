@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface QaLogRepository extends JpaRepository<QaLog, Long> {
+    // 问答日志数据访问：用于统计分析和热门问题
     long countByIsHit(Integer isHit);
     long countByCreatedAtGreaterThanEqual(LocalDateTime start);
 

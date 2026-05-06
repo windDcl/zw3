@@ -12,6 +12,7 @@ import java.util.Map;
 @RequestMapping("/api/admin/settings")
 @RequiredArgsConstructor
 public class AdminSettingController {
+    // 管理端系统设置接口：阈值和开关类配置
     private final SettingService settingService;
 
     @GetMapping

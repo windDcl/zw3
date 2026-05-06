@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ApiResponse<T> {
+    // 统一接口响应结构：code/message/data
     private int code;
     private String message;
     private T data;

@@ -12,6 +12,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class AnnouncementService {
+    // 公告业务层：封装公告增删改查逻辑
     private final AnnouncementRepository announcementRepository;
 
     public List<Announcement> listAll() {

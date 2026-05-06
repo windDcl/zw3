@@ -92,6 +92,7 @@ const form = reactive({
 })
 
 const sortedRows = computed(() =>
+  // 置顶优先，其次按发布时间倒序展示
   [...rows.value].sort((a, b) => {
     if ((b.isTop ?? 0) !== (a.isTop ?? 0)) {
       return (b.isTop ?? 0) - (a.isTop ?? 0)
@@ -124,7 +125,8 @@ const resetForm = () => {
 }
 
 const loadData = async () => {
-  const resp = await http.get('/api/admin/announcements')
+  // 拉取公告列表用于后台维护
+  const resp = await http.get('/admin/announcements')
   rows.value = resp.data.data || []
 }
 
@@ -153,10 +155,10 @@ const submitForm = async () => {
     status: form.status
   }
   if (editingId.value) {
-    await http.put(`/api/admin/announcements/${editingId.value}`, payload)
+    await http.put(`/admin/announcements/${editingId.value}`, payload)
     ElMessage.success('公告已更新')
   } else {
-    await http.post('/api/admin/announcements', payload)
+    await http.post('/admin/announcements', payload)
     ElMessage.success('公告已创建')
   }
   dialogVisible.value = false
@@ -165,7 +167,7 @@ const submitForm = async () => {
 }
 
 const toggleStatus = async (row) => {
-  await http.put(`/api/admin/announcements/${row.id}`, {
+  await http.put(`/admin/announcements/${row.id}`, {
     title: row.title,
     content: row.content,
     publishTime: row.publishTime,
@@ -180,7 +182,7 @@ const removeRow = async (row) => {
   await ElMessageBox.confirm(`确定删除公告“${row.title}”吗？`, '删除确认', {
     type: 'warning'
   })
-  await http.delete(`/api/admin/announcements/${row.id}`)
+  await http.delete(`/admin/announcements/${row.id}`)
   ElMessage.success('公告已删除')
   await loadData()
 }

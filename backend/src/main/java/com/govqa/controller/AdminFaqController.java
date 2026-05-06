@@ -15,6 +15,7 @@ import java.util.Map;
 @RequestMapping("/api/admin/faqs")
 @RequiredArgsConstructor
 public class AdminFaqController {
+    // 管理端 FAQ 接口：问答维护与批量管理
     private final FaqService faqService;
 
     @GetMapping

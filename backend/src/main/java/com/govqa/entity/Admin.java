@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "admin")
 public class Admin {
+    // 管理员账号信息：登录鉴权使用
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

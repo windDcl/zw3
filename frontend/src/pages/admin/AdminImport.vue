@@ -18,10 +18,11 @@ import http from '../../api/http'
 const result = ref(null)
 
 const upload = async ({ file }) => {
+  // 组装 multipart/form-data 上传 Excel，交由后端批量导入 FAQ
   const form = new FormData()
   form.append('file', file)
   form.append('categoryId', 1)
-  const resp = await http.post('/api/admin/import/faq-excel', form)
+  const resp = await http.post('/admin/import/faq-excel', form)
   result.value = resp.data.data
 }
 </script>

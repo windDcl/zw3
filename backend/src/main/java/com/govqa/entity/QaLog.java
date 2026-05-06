@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "qa_log")
 public class QaLog {
+    // 问答日志：记录用户提问、匹配结果与命中状态
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -14,6 +14,7 @@ import java.util.List;
 @RequestMapping("/api/admin/categories")
 @RequiredArgsConstructor
 public class AdminCategoryController {
+    // 管理端分类管理接口：增删改查与启停
     private final CategoryService categoryService;
 
     @GetMapping

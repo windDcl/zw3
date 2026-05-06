@@ -119,6 +119,9 @@ const announcements = ref([])
 const hotQuestions = ref([])
 const router = useRouter()
 let timer = null
+// 与管理端保持一致：识别并隐藏测试分类，避免出现在市民端入口
+const isHiddenCategory = (name) =>
+  String(name || '').trim().normalize('NFKC').toLowerCase() === '测试分类a'
 const quickQuestions = [
   '公积金如何提取',
   '社保转移需要什么材料',
@@ -126,12 +129,14 @@ const quickQuestions = [
 ]
 
 const ask = () => {
+  // 把用户当前问题暂存后跳转到结果页，结果页会基于该问题查询答案
   if (!question.value.trim()) return
   localStorage.setItem('last_question', question.value)
   router.push('/result')
 }
 
 const querySearch = (queryString, cb) => {
+  // 空输入不请求接口，直接清空建议列表
   if (!queryString.trim()) {
     cb([])
     return
@@ -139,8 +144,9 @@ const querySearch = (queryString, cb) => {
   if (timer) {
     clearTimeout(timer)
   }
+  // 轻量防抖，减少用户连续输入时的请求次数
   timer = setTimeout(async () => {
-    const resp = await http.get('/api/public/suggestions', {
+    const resp = await http.get('/public/suggestions', {
       params: { keyword: queryString, limit: 8 }
     })
     const items = (resp.data.data || []).map((item) => ({ value: item }))
@@ -154,12 +160,13 @@ const onSelectSuggestion = (item) => {
 }
 
 onMounted(async () => {
+  // 首屏并行加载分类、公告、热门问题，提升首屏响应速度
   const [c, a, h] = await Promise.all([
-    http.get('/api/public/categories'),
-    http.get('/api/public/announcements'),
-    http.get('/api/public/hot-questions')
+    http.get('/public/categories'),
+    http.get('/public/announcements'),
+    http.get('/public/hot-questions')
   ])
-  categories.value = c.data.data || []
+  categories.value = (c.data.data || []).filter((item) => !isHiddenCategory(item.name))
   announcements.value = a.data.data || []
   hotQuestions.value = h.data.data || []
 })

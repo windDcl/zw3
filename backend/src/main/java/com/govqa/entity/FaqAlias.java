@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "faq_alias")
 public class FaqAlias {
+    // FAQ 别名表：记录同义问法用于匹配召回
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

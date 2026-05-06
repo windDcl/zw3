@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "announcement")
 public class Announcement {
+    // 公告数据：面向市民端展示的通知内容
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

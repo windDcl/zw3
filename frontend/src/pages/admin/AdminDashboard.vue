@@ -73,6 +73,7 @@ const categoryDistribution = ref([])
 const hotQuestions = ref([])
 
 const trendOption = computed(() => ({
+  // 问答趋势折线图配置
   tooltip: { trigger: 'axis' },
   grid: { left: 36, right: 16, top: 20, bottom: 30 },
   xAxis: {
@@ -93,6 +94,7 @@ const trendOption = computed(() => ({
 }))
 
 const categoryOption = computed(() => ({
+  // 分类分布柱状图配置
   tooltip: { trigger: 'axis' },
   grid: { left: 36, right: 16, top: 20, bottom: 30 },
   xAxis: {
@@ -114,6 +116,7 @@ const categoryOption = computed(() => ({
 }))
 
 const hotOption = computed(() => ({
+  // 热门问题排行横向柱状图配置
   tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
   grid: { left: 120, right: 16, top: 10, bottom: 10 },
   xAxis: { type: 'value' },
@@ -135,11 +138,12 @@ const hotOption = computed(() => ({
 }))
 
 onMounted(async () => {
+  // 并行请求总览和图表数据，减少后台首页加载耗时
   const [o, t, c, h] = await Promise.all([
-    http.get('/api/admin/dashboard/overview'),
-    http.get('/api/admin/dashboard/trend'),
-    http.get('/api/admin/dashboard/category-distribution'),
-    http.get('/api/admin/dashboard/hot-questions')
+    http.get('/admin/dashboard/overview'),
+    http.get('/admin/dashboard/trend'),
+    http.get('/admin/dashboard/category-distribution'),
+    http.get('/admin/dashboard/hot-questions')
   ])
   overview.value = o.data.data || {}
   trend.value = t.data.data || []

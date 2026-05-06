@@ -16,6 +16,7 @@ import java.util.List;
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 public class AdminLogController {
+    // 管理端日志接口：查询问答记录与筛选条件
     private final QaLogRepository qaLogRepository;
     private final UnmatchedQuestionRepository unmatchedQuestionRepository;
 

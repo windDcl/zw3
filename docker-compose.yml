@@ -17,6 +17,23 @@ services:
       timeout: 5s
       retries: 12
 
+  neo4j:
+    image: neo4j:5.26
+    container_name: govqa-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/12345678
+      TZ: Asia/Shanghai
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:7474 >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+
   nlp:
     build:
       context: ./nlp-service
@@ -38,12 +55,18 @@ services:
         condition: service_healthy
       nlp:
         condition: service_healthy
+      neo4j:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8080
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/gov_qa?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 12345678
       APP_NLP_BASE_URL: http://nlp:8000
+      APP_GRAPH_ENABLED: "true"
+      APP_GRAPH_URI: bolt://neo4j:7687
+      APP_GRAPH_USERNAME: neo4j
+      APP_GRAPH_PASSWORD: 12345678
       APP_CORS_ALLOWED_ORIGINS: http://localhost,http://127.0.0.1
     ports:
       - "8080:8080"
@@ -70,3 +93,4 @@ services:
 
 volumes:
   mysql_data:
+  neo4j_data:

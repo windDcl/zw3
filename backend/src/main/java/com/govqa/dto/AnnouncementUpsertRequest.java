@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class AnnouncementUpsertRequest {
+    // 公告新增/编辑请求体
     @NotBlank
     private String title;
     @NotBlank

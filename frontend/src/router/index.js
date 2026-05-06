@@ -48,6 +48,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to, _from, next) => {
+  // 后台路由前置守卫：无 token 时强制跳转登录页
   if (to.path.startsWith('/admin') && to.path !== '/admin/login') {
     const token = localStorage.getItem('admin_token')
     if (!token) {

@@ -8,6 +8,7 @@ import lombok.Data;
 
 @Data
 public class AskRequest {
+    // 市民提问请求参数：问题文本与候选数
     @NotBlank
     @Size(max = 200)
     private String question;

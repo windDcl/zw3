@@ -15,6 +15,7 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class AiAssistService {
+    // 第三方 AI 辅助服务：未命中时生成参考答复
     private final RestTemplate restTemplate;
     private final SettingService settingService;
     private final ObjectMapper objectMapper;

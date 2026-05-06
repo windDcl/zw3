@@ -50,6 +50,7 @@ import http from '../api/http'
 const route = useRoute()
 const router = useRouter()
 
+// 根据当前路由判断是否处于管理端视图，用于切换顶部导航状态
 const isAdminView = computed(() => route.path.startsWith('/admin'))
 const hasAdminToken = computed(() => {
   route.fullPath
@@ -61,12 +62,13 @@ const goHome = () => {
 }
 
 const goAdmin = () => {
+  // 已登录直接进入后台，否则跳转登录
   router.push(hasAdminToken.value ? '/admin/dashboard' : '/admin/login')
 }
 
 const logout = async () => {
   try {
-    await http.post('/api/admin/logout')
+    await http.post('/admin/logout')
   } catch (_error) {
   }
   localStorage.removeItem('admin_token')

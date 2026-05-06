@@ -12,6 +12,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // 把鉴权拦截器挂到 /api/**，具体放行规则在 AuthInterceptor 内部处理
         registry.addInterceptor(authInterceptor).addPathPatterns("/api/**");
     }
 }
