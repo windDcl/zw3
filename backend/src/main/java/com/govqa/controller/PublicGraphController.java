@@ -2,6 +2,7 @@ package com.govqa.controller;
 
 import com.govqa.common.ApiResponse;
 import com.govqa.dto.GraphNodeDto;
+import com.govqa.dto.GraphPathStepDto;
 import com.govqa.dto.GraphViewDto;
 import com.govqa.service.KnowledgeGraphLinkService;
 import com.govqa.service.KnowledgeGraphService;
@@ -26,6 +27,12 @@ public class PublicGraphController {
     @GetMapping("/node/{id}")
     public ApiResponse<GraphNodeDto> node(@PathVariable("id") String id) {
         return ApiResponse.ok(knowledgeGraphService.getNode(id).orElse(null));
+    }
+
+    @GetMapping("/path")
+    public ApiResponse<List<GraphPathStepDto>> path(@RequestParam("from") String fromId,
+                                                    @RequestParam("to") String toId) {
+        return ApiResponse.ok(knowledgeGraphService.findPath(fromId, toId));
     }
 
     @GetMapping("/related-faqs/{nodeId}")

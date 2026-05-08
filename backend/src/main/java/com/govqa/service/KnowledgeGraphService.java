@@ -131,6 +131,45 @@ public class KnowledgeGraphService {
         }
     }
 
+    public List<GraphPathStepDto> findPath(String fromId, String toId) {
+        if (!graphProperties.isEnabled() || neo4jDriver.isEmpty()
+                || fromId == null || fromId.isBlank() || toId == null || toId.isBlank()) {
+            return List.of();
+        }
+        try (Session session = newSession()) {
+            Result result = session.run("""
+                    MATCH p = shortestPath((a {bizId: $fromId})-[*..4]->(b {bizId: $toId}))
+                    RETURN [n IN nodes(p) | properties(n)] AS nodePropsList,
+                           [n IN nodes(p) | labels(n)] AS nodeLabelsList
+                    LIMIT 1
+                    """, Map.of("fromId", fromId, "toId", toId));
+            if (!result.hasNext()) {
+                return List.of();
+            }
+            Record record = result.next();
+            List<Object> nodePropsList = record.get("nodePropsList").asObject() instanceof List
+                    ? (List<Object>) record.get("nodePropsList").asObject() : List.of();
+            List<Object> nodeLabelsList = record.get("nodeLabelsList").asObject() instanceof List
+                    ? (List<Object>) record.get("nodeLabelsList").asObject() : List.of();
+            List<GraphPathStepDto> steps = new ArrayList<>();
+            for (int i = 0; i < nodePropsList.size(); i++) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> props = (Map<String, Object>) nodePropsList.get(i);
+                @SuppressWarnings("unchecked")
+                List<Object> labels = (List<Object>) nodeLabelsList.get(i);
+                GraphNodeDto node = new GraphNodeDto();
+                node.setId(asString(props.get("bizId")));
+                node.setName(asString(props.get("name")));
+                node.setType(asString(props.getOrDefault("type", labels.isEmpty() ? "" : labels.get(0))));
+                steps.add(toPathStep(i + 1, node));
+            }
+            return steps;
+        } catch (Exception ex) {
+            log.warn("Find path failed: fromId={}, toId={}", fromId, toId, ex);
+            return List.of();
+        }
+    }
+
     public List<GraphPathStepDto> buildPath(GraphViewDto view) {
         if (view == null || view.getCenterNode() == null) {
             return List.of();

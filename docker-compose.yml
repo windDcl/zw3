@@ -28,18 +28,41 @@ services:
       - "7687:7687"
     volumes:
       - neo4j_data:/data
+      - ./sql/init-graph-data.cypher:/init-graph-data.cypher:ro
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:7474 >/dev/null 2>&1 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 12
 
+  neo4j-init:
+    image: neo4j:5.26
+    container_name: govqa-neo4j-init
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    environment:
+      NEO4J_AUTH: neo4j/12345678
+    volumes:
+      - ./sql/init-graph-data.cypher:/init-graph-data.cypher:ro
+    entrypoint:
+      - sh
+      - -c
+      - |
+        for i in 1 2 3 4 5 6 7 8; do
+          cat /init-graph-data.cypher | cypher-shell -a neo4j:7687 -u neo4j -p 12345678 && exit 0
+          echo "Attempt $$i failed, retrying..."
+          sleep 5
+        done
+        exit 1
+    restart: "no"
+
   nlp:
     build:
       context: ./nlp-service
     container_name: govqa-nlp
     ports:
-      - "8000:8000"
+      - "8001:8000"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()"]
       interval: 15s
@@ -57,6 +80,8 @@ services:
         condition: service_healthy
       neo4j:
         condition: service_healthy
+      neo4j-init:
+        condition: service_completed_successfully
     environment:
       SERVER_PORT: 8080
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/gov_qa?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai

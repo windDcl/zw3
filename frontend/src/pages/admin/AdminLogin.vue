@@ -20,7 +20,7 @@ import { useRouter } from 'vue-router'
 import http from '../../api/http'
 
 const username = ref('admin')
-const password = ref('Admin@123')
+const password = ref('admin123456')
 const router = useRouter()
 
 const login = async () => {

@@ -22,6 +22,9 @@ venv/
 # Logs
 *.log
 
+# NLP generated data
+nlp-service/data/
+
 # IDE
 .idea/
 .vscode/
